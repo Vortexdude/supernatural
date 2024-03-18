@@ -1,0 +1,408 @@
+Index: client.py
+===================================================================
+diff --git a/client.py b/client.py
+deleted file mode 100644
+--- a/client.py	
++++ /dev/null	
+@@ -1,54 +0,0 @@
+-from socket import socket
+-from zlib import decompress
+-
+-import pygame
+-
+-WIDTH = 1900
+-HEIGHT = 1000
+-
+-
+-def recall(conn, length):
+-    """ Retreive all pixels. """
+-
+-    buf = b''
+-    while len(buf) < length:
+-        data = conn.recv(length - len(buf))
+-        if not data:
+-            return data
+-        buf += data
+-    return buf
+-
+-
+-def main(host='127.0.0.1', port=5000):
+-    pygame.init()
+-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+-    clock = pygame.time.Clock()
+-    watching = True
+-
+-    sock = socket()
+-    sock.connect((host, port))
+-    try:
+-        while watching:
+-            for event in pygame.event.get():
+-                if event.type == pygame.QUIT:
+-                    watching = False
+-                    break
+-
+-            # Retreive the size of the pixels length, the pixels length and pixels
+-            size_len = int.from_bytes(sock.recv(1), byteorder='big')
+-            size = int.from_bytes(sock.recv(size_len), byteorder='big')
+-            pixels = decompress(recall(sock, size))
+-
+-            # Create the Surface from raw pixels
+-            img = pygame.image.fromstring(pixels, (WIDTH, HEIGHT), 'RGB')
+-
+-            # Display the picture
+-            screen.blit(img, (0, 0))
+-            pygame.display.flip()
+-            clock.tick(60)
+-    finally:
+-        sock.close()
+-
+-
+-if __name__ == '__main__':
+-    main()
+Index: server.py
+===================================================================
+diff --git a/server.py b/server.py
+deleted file mode 100644
+--- a/server.py	
++++ /dev/null	
+@@ -1,53 +0,0 @@
+-from socket import socket
+-from threading import Thread
+-from zlib import compress
+-
+-from mss import mss
+-
+-
+-WIDTH = 1900
+-HEIGHT = 1000
+-
+-
+-def retreive_screenshot(conn):
+-    with mss() as sct:
+-        # The region to capture
+-        rect = {'top': 0, 'left': 0, 'width': WIDTH, 'height': HEIGHT}
+-
+-        while 'recording':
+-            # Capture the screen
+-            img = sct.grab(rect)
+-            # Tweak the compression level here (0-9)
+-            pixels = compress(img.rgb, 6)
+-
+-            # Send the size of the pixels length
+-            size = len(pixels)
+-            size_len = (size.bit_length() + 7) // 8
+-            conn.send(bytes([size_len]))
+-
+-            # Send the actual pixels length
+-            size_bytes = size.to_bytes(size_len, 'big')
+-            conn.send(size_bytes)
+-
+-            # Send pixels
+-            conn.sendall(pixels)
+-
+-
+-def main(host='0.0.0.0', port=5000):
+-    sock = socket()
+-    sock.bind((host, port))
+-    try:
+-        sock.listen(5)
+-        print('Server started.')
+-
+-        while 'connected':
+-            conn, addr = sock.accept()
+-            print('Client connected IP:', addr)
+-            thread = Thread(target=retreive_screenshot, args=(conn,))
+-            thread.start()
+-    finally:
+-        sock.close()
+-
+-
+-if __name__ == '__main__':
+-    main()
+Index: .idea/modules.xml
+===================================================================
+diff --git a/.idea/modules.xml b/.idea/modules.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/modules.xml	
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="ProjectModuleManager">
++    <modules>
++      <module fileurl="file://$PROJECT_DIR$/.idea/supernatural.iml" filepath="$PROJECT_DIR$/.idea/supernatural.iml" />
++    </modules>
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/inspectionProfiles/Project_Default.xml
+===================================================================
+diff --git a/.idea/inspectionProfiles/Project_Default.xml b/.idea/inspectionProfiles/Project_Default.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/inspectionProfiles/Project_Default.xml	
+@@ -0,0 +1,83 @@
++<component name="InspectionProjectProfileManager">
++  <profile version="1.0">
++    <option name="myName" value="Project Default" />
++    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
++      <option name="ignoredPackages">
++        <value>
++          <list size="48">
++            <item index="0" class="java.lang.String" itemvalue="boto3" />
++            <item index="1" class="java.lang.String" itemvalue="pydantic" />
++            <item index="2" class="java.lang.String" itemvalue="pydantic_core" />
++            <item index="3" class="java.lang.String" itemvalue="botocore" />
++            <item index="4" class="java.lang.String" itemvalue="typing_extensions" />
++            <item index="5" class="java.lang.String" itemvalue="blinker" />
++            <item index="6" class="java.lang.String" itemvalue="greenlet" />
++            <item index="7" class="java.lang.String" itemvalue="Werkzeug" />
++            <item index="8" class="java.lang.String" itemvalue="SQLAlchemy" />
++            <item index="9" class="java.lang.String" itemvalue="psycopg2-binary" />
++            <item index="10" class="java.lang.String" itemvalue="marshmallow" />
++            <item index="11" class="java.lang.String" itemvalue="packaging" />
++            <item index="12" class="java.lang.String" itemvalue="MarkupSafe" />
++            <item index="13" class="java.lang.String" itemvalue="Jinja2" />
++            <item index="14" class="java.lang.String" itemvalue="flastapi" />
++            <item index="15" class="java.lang.String" itemvalue="itsdangerous" />
++            <item index="16" class="java.lang.String" itemvalue="Flask" />
++            <item index="17" class="java.lang.String" itemvalue="motor" />
++            <item index="18" class="java.lang.String" itemvalue="rsa" />
++            <item index="19" class="java.lang.String" itemvalue="smmap" />
++            <item index="20" class="java.lang.String" itemvalue="python-dateutil" />
++            <item index="21" class="java.lang.String" itemvalue="cffi" />
++            <item index="22" class="java.lang.String" itemvalue="python-dotenv" />
++            <item index="23" class="java.lang.String" itemvalue="h11" />
++            <item index="24" class="java.lang.String" itemvalue="pyasn1" />
++            <item index="25" class="java.lang.String" itemvalue="pycparser" />
++            <item index="26" class="java.lang.String" itemvalue="gitdb" />
++            <item index="27" class="java.lang.String" itemvalue="sniffio" />
++            <item index="28" class="java.lang.String" itemvalue="starlette" />
++            <item index="29" class="java.lang.String" itemvalue="lazy-model" />
++            <item index="30" class="java.lang.String" itemvalue="urllib3" />
++            <item index="31" class="java.lang.String" itemvalue="uvicorn" />
++            <item index="32" class="java.lang.String" itemvalue="python-jose" />
++            <item index="33" class="java.lang.String" itemvalue="passlib" />
++            <item index="34" class="java.lang.String" itemvalue="dnspython" />
++            <item index="35" class="java.lang.String" itemvalue="GitPython" />
++            <item index="36" class="java.lang.String" itemvalue="pymongo" />
++            <item index="37" class="java.lang.String" itemvalue="six" />
++            <item index="38" class="java.lang.String" itemvalue="cryptography" />
++            <item index="39" class="java.lang.String" itemvalue="ecdsa" />
++            <item index="40" class="java.lang.String" itemvalue="python-multipart" />
++            <item index="41" class="java.lang.String" itemvalue="toml" />
++            <item index="42" class="java.lang.String" itemvalue="click" />
++            <item index="43" class="java.lang.String" itemvalue="jmespath" />
++            <item index="44" class="java.lang.String" itemvalue="fastapi" />
++            <item index="45" class="java.lang.String" itemvalue="s3transfer" />
++            <item index="46" class="java.lang.String" itemvalue="beanie" />
++            <item index="47" class="java.lang.String" itemvalue="idna" />
++          </list>
++        </value>
++      </option>
++    </inspection_tool>
++    <inspection_tool class="PyPep8Inspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
++      <option name="ignoredErrors">
++        <list>
++          <option value="E501" />
++        </list>
++      </option>
++    </inspection_tool>
++    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
++      <option name="ignoredErrors">
++        <list>
++          <option value="N806" />
++          <option value="N803" />
++        </list>
++      </option>
++    </inspection_tool>
++    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
++      <option name="ignoredIdentifiers">
++        <list>
++          <option value="list.*" />
++        </list>
++      </option>
++    </inspection_tool>
++  </profile>
++</component>
+\ No newline at end of file
+Index: .idea/vcs.xml
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/vcs.xml	
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="" vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/inspectionProfiles/profiles_settings.xml
+===================================================================
+diff --git a/.idea/inspectionProfiles/profiles_settings.xml b/.idea/inspectionProfiles/profiles_settings.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/inspectionProfiles/profiles_settings.xml	
+@@ -0,0 +1,6 @@
++<component name="InspectionProjectProfileManager">
++  <settings>
++    <option name="USE_PROJECT_PROFILE" value="false" />
++    <version value="1.0" />
++  </settings>
++</component>
+\ No newline at end of file
+Index: .idea/misc.xml
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+new file mode 100644
+--- /dev/null	
++++ b/.idea/misc.xml	
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="Black">
++    <option name="sdkName" value="Python 3.11 (supernatural)" />
++  </component>
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 (supernatural)" project-jdk-type="Python SDK" />
++</project>
+\ No newline at end of file
+Index: tests/server.py
+===================================================================
+diff --git a/tests/server.py b/tests/server.py
+new file mode 100644
+--- /dev/null	
++++ b/tests/server.py	
+@@ -0,0 +1,53 @@
++# from socket import socket
++# from threading import Thread
++# from zlib import compress
++#
++# from mss import mss
++#
++#
++# WIDTH = 1900
++# HEIGHT = 1000
++#
++#
++# def retreive_screenshot(conn):
++#     with mss() as sct:
++#         # The region to capture
++#         rect = {'top': 0, 'left': 0, 'width': WIDTH, 'height': HEIGHT}
++#
++#         while 'recording':
++#             # Capture the screen
++#             img = sct.grab(rect)
++#             # Tweak the compression level here (0-9)
++#             pixels = compress(img.rgb, 6)
++#
++#             # Send the size of the pixels length
++#             size = len(pixels)
++#             size_len = (size.bit_length() + 7) // 8
++#             conn.send(bytes([size_len]))
++#
++#             # Send the actual pixels length
++#             size_bytes = size.to_bytes(size_len, 'big')
++#             conn.send(size_bytes)
++#
++#             # Send pixels
++#             conn.sendall(pixels)
++#
++#
++# def main(host='0.0.0.0', port=5000):
++#     sock = socket()
++#     sock.bind((host, port))
++#     try:
++#         sock.listen(5)
++#         print('Server started.')
++#
++#         while 'connected':
++#             conn, addr = sock.accept()
++#             print('Client connected IP:', addr)
++#             thread = Thread(target=retreive_screenshot, args=(conn,))
++#             thread.start()
++#     finally:
++#         sock.close()
++#
++#
++# if __name__ == '__main__':
++#     main()
+Index: superbot/system.toml
+===================================================================
+diff --git a/superbot/system.toml b/superbot/system.toml
+new file mode 100644
+--- /dev/null	
++++ b/superbot/system.toml	
+@@ -0,0 +1,7 @@
++[[users]]
++id = 1002
++name = "Raj"
++
++[[users.others]]
++    home = "/home/rajju"
++    shell = "/bin/nologin"
+Index: tests/client.py
+===================================================================
+diff --git a/tests/client.py b/tests/client.py
+new file mode 100644
+--- /dev/null	
++++ b/tests/client.py	
+@@ -0,0 +1,54 @@
++# from socket import socket
++# from zlib import decompress
++#
++# import pygame
++#
++# WIDTH = 1900
++# HEIGHT = 1000
++#
++#
++# def recall(conn, length):
++#     """ Retreive all pixels. """
++#
++#     buf = b''
++#     while len(buf) < length:
++#         data = conn.recv(length - len(buf))
++#         if not data:
++#             return data
++#         buf += data
++#     return buf
++#
++#
++# def main(host='127.0.0.1', port=5000):
++#     pygame.init()
++#     screen = pygame.display.set_mode((WIDTH, HEIGHT))
++#     clock = pygame.time.Clock()
++#     watching = True
++#
++#     sock = socket()
++#     sock.connect((host, port))
++#     try:
++#         while watching:
++#             for event in pygame.event.get():
++#                 if event.type == pygame.QUIT:
++#                     watching = False
++#                     break
++#
++#             # Retreive the size of the pixels length, the pixels length and pixels
++#             size_len = int.from_bytes(sock.recv(1), byteorder='big')
++#             size = int.from_bytes(sock.recv(size_len), byteorder='big')
++#             pixels = decompress(recall(sock, size))
++#
++#             # Create the Surface from raw pixels
++#             img = pygame.image.fromstring(pixels, (WIDTH, HEIGHT), 'RGB')
++#
++#             # Display the picture
++#             screen.blit(img, (0, 0))
++#             pygame.display.flip()
++#             clock.tick(60)
++#     finally:
++#         sock.close()
++#
++#
++# if __name__ == '__main__':
++#     main()
+diff --git a/tests/myapp.py b/tests/myapp.py
+new file mode 100644

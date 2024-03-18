@@ -1,0 +1,86 @@
+Index: superbot/main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import falcon.asgi\nfrom superbot.routes.main import add_routes\n\n\ndef create_app():\n    \"\"\"Main entrypoint of the app\"\"\"\n\n    app = falcon.asgi.App()\n    add_routes(app)\n\n    return app\n
+===================================================================
+diff --git a/superbot/main.py b/superbot/main.py
+--- a/superbot/main.py	
++++ b/superbot/main.py	
+@@ -1,11 +1,18 @@
+-import falcon.asgi
++import falcon
+ from superbot.routes.main import add_routes
++from apispec import APISpec
++
++spec = APISpec(
++    title='SuperBot STACK',
++    version='1.0.0',
++    openapi_version='2.0',
++)
+ 
+ 
+ def create_app():
+     """Main entrypoint of the app"""
+ 
+-    app = falcon.asgi.App()
+-    add_routes(app)
++    api = falcon.API()
++    add_routes(api)
+ 
+-    return app
++    return api
+Index: superbot/routes/main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from falcon import asgi\nfrom superbot.utils.status import Status, CType\nimport falcon\n\n\nclass CustomClass:\n    async def on_get(self, req, resp):\n        \"\"\"Handles GET requests\"\"\"\n        resp.status = Status.HTTP_200  # This is the default status\n        resp.content_type = CType.MEDIA_TEXT  # Default is JSON, so override\n        resp.text = (\n            '\\nTwo things awe me most, the starry sky '\n            'above me and the moral law within me.\\n'\n            '\\n'\n            '    ~ Immanuel Kant\\n\\n'\n        )\n\n\nda = CustomClass()\n\n\ndef add_routes(app: asgi.App()) -> None:\n    app.add_route('/hello_world', da)\n
+===================================================================
+diff --git a/superbot/routes/main.py b/superbot/routes/main.py
+--- a/superbot/routes/main.py	
++++ b/superbot/routes/main.py	
+@@ -1,23 +1,30 @@
+-from falcon import asgi
+-from superbot.utils.status import Status, CType
+ import falcon
++from superbot.utils.status import Status, CType
++import json
+ 
+ 
+-class CustomClass:
+-    async def on_get(self, req, resp):
+-        """Handles GET requests"""
+-        resp.status = Status.HTTP_200  # This is the default status
+-        resp.content_type = CType.MEDIA_TEXT  # Default is JSON, so override
+-        resp.text = (
+-            '\nTwo things awe me most, the starry sky '
+-            'above me and the moral law within me.\n'
+-            '\n'
+-            '    ~ Immanuel Kant\n\n'
+-        )
++class DefaultRouteHandler(object):
++    """
++    SuperBot default route handler.
++    """
+ 
++    # def __init__(self):
++    #     super(DefaultRouteHandler, self).__init__()
+ 
+-da = CustomClass()
++    def on_get(self, req, resp):
++        response = {
++            'message': 'SuperBot is successfully initialized!',
++            'availableRoutes': []
++        }
++        response['availableRoutes'].append('/login')
++        response['availableRoutes'].append('/signup')
++        response['availableRoutes'].append('/reset')
++        response['availableRoutes'].append('/proton-prom')
++        response['availableRoutes'].append('/proton-grafana')
+ 
++        resp.body = json.dumps(response)
++        resp.status = falcon.HTTP_200
+ 
+-def add_routes(app: asgi.App()) -> None:
+-    app.add_route('/hello_world', da)
++
++def add_routes(api: falcon.API) -> None:
++    api.add_route('/', DefaultRouteHandler())
